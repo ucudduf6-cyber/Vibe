@@ -16,15 +16,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="WORKER">
-  <meta name="mobile-web-app-capable" content="yes">
 </head>
 
 <body>
   <div class="app">
 
-    <!-- БОКОВОЕ МЕНЮ -->
     <aside class="sidebar">
-      <a href="#home" class="brand" aria-label="WORKER — главная">
+      <a href="#home" class="brand">
         <span class="logo">W</span>
         <span class="brand-text">
           <strong>WORKER</strong>
@@ -60,7 +58,7 @@
       </nav>
 
       <button class="primary wide" type="button" id="openComposer">
-        <span>＋</span> Создать публикацию
+        ＋ Создать публикацию
       </button>
 
       <div class="sidebar-bottom">
@@ -79,9 +77,7 @@
       </div>
     </aside>
 
-    <!-- ОСНОВНАЯ ОБЛАСТЬ -->
     <main class="main">
-
       <header class="topbar">
         <a class="mobile-brand" href="#home">
           <span class="logo">W</span>
@@ -104,8 +100,7 @@
             class="icon-btn"
             type="button"
             id="notifBtn"
-            aria-label="Включить уведомления"
-            title="Уведомления"
+            aria-label="Уведомления"
           >♧</button>
 
           <button
@@ -113,24 +108,21 @@
             type="button"
             data-page="settings"
             aria-label="Настройки"
-            title="Настройки"
           >⚙</button>
         </div>
       </header>
 
-      <!-- JavaScript отрисовывает здесь выбранную страницу -->
       <section id="page" class="content" aria-live="polite">
         <div class="loading-card">
           <div class="logo">W</div>
           <h1>Добро пожаловать в WORKER</h1>
-          <p>Подготавливаем твою ленту...</p>
+          <p>Загружаем приложение...</p>
           <noscript>
-            Для работы приложения необходимо включить JavaScript в браузере.
+            Для работы WORKER необходимо включить JavaScript.
           </noscript>
         </div>
       </section>
 
-      <!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
       <nav class="mobile-nav" aria-label="Мобильная навигация">
         <button class="active" type="button" data-page="home">
           <span>⌂</span>
@@ -157,12 +149,9 @@
           <small>Профиль</small>
         </button>
       </nav>
-
     </main>
 
-    <!-- ПРАВАЯ КОЛОНКА -->
     <aside class="rightbar">
-
       <section class="widget">
         <h2>Тренды сегодня</h2>
 
@@ -206,37 +195,34 @@
         <span>WORKER</span>
         <span>Твоя цифровая среда</span>
       </footer>
-
     </aside>
+
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО -->
   <dialog id="modal" aria-label="Диалоговое окно">
     <form method="dialog" id="modalForm">
       <button
         class="close"
         type="submit"
         aria-label="Закрыть"
-        title="Закрыть"
       >×</button>
 
       <div id="modalContent"></div>
     </form>
   </dialog>
 
-  <!-- СООБЩЕНИЯ ПРИ ВЫПОЛНЕНИИ ДЕЙСТВИЙ -->
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <!-- ОСНОВНОЙ JAVASCRIPT -->
   <script src="./app.js"></script>
 
-  <!-- РЕГИСТРАЦИЯ SERVICE WORKER -->
   <script>
-    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    if ("serviceWorker" in navigator &&
+        (location.protocol === "https:" ||
+         location.hostname === "localhost")) {
       window.addEventListener("load", function () {
         navigator.serviceWorker.register("./sw.js")
           .catch(function (error) {
-            console.error("Не удалось зарегистрировать Service Worker:", error);
+            console.error("Ошибка Service Worker:", error);
           });
       });
     }
