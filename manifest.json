@@ -1,15 +1,24 @@
 {
-  "name": "Worker Social",
+  "name": "Worker - Social Network",
   "short_name": "Worker",
+  "description": "Твое рабочее пространство",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "assets/logo_worker.png",
+      "src": "logo_worker.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo_worker.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
