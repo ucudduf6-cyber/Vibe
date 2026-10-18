@@ -1,15 +1,16 @@
 {
   "id": "./",
-  "name": "WORKER — социальная сеть",
+  "name": "WORKER — общение без границ",
   "short_name": "WORKER",
-  "description": "Твоя цифровая среда общения",
+  "description": "Общение, публикации и новые знакомства.",
+  "lang": "ru",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0b1120",
-  "theme_color": "#101827",
-  "lang": "ru",
+  "orientation": "portrait-primary",
+  "background_color": "#111318",
+  "theme_color": "#111318",
+  "categories": ["social", "communication"],
   "icons": [
     {
       "src": "./icon.svg",
