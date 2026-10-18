@@ -1,1 +1,137 @@
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];const KEY='worker_app_v1';let state=JSON.parse(localStorage.getItem(KEY)||'null')||{user:null,posts:[],saved:[],following:[],comments:{},page:'home'};let deferredPrompt=null;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function save(){localStorage.setItem(KEY,JSON.stringify(state))}function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2600)}function initials(n){return esc((n||'W').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase())}function avatar(name=state.user?.name||'WORKER'){return `<div class="avatar">${initials(name)}</div>`}function nav(page){state.page=page;save();$$('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));render()}function openModal(html){$('#modalContent').innerHTML=html;$('#modal').showModal()}function composer(){openModal(`<h2>Новая публикация</h2><p class="muted">Поделись идеей с сообществом</p><div class="field"><label>Текст публикации</label><textarea id="postText" placeholder="Что у тебя нового?" maxlength="5000"></textarea></div><div class="field"><label>Изображение (необязательно)</label><input id="postImage" type="file" accept="image/*"></div><div class="modal-actions"><button class="subtle" value="cancel">Отмена</button><button class="primary" id="publishBtn" type="button">Опубликовать</button></div>`);$('#publishBtn').onclick=async()=>{let text=$('#postText').value.trim(),file=$('#postImage').files[0];if(!text&&!file){toast('Добавь текст или изображение');return}let image='';if(file){if(file.size>1500000){toast('Выбери изображение меньше 1,5 МБ');return}image=await new Promise((res,rej)=>{let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}state.posts.unshift({id:crypto.randomUUID(),text,image,author:state.user?.name||'Гость WORKER',handle:state.user?.handle||'@guest',date:Date.now(),likes:[],comments:[]});save();$('#modal').close();nav('home');toast('Публикация добавлена') }}function auth(mode='login'){openModal(`<h2>${mode==='register'?'Создать аккаунт':'С возвращением'}</h2><p class="muted">${mode==='register'?'Присоединяйся к WORKER':'Войди в свой профиль на этом устройстве'}</p>${mode==='register'?'<div class="field"><label>Имя</label><input id="authName" placeholder="Как тебя зовут" maxlength="40"></div>':''}<div class="field"><label>Электронная почта</label><input id="authEmail" type="email" placeholder="you@example.com" required></div><div class="field"><label>Пароль</label><input id="authPass" type="password" minlength="6" placeholder="Не менее 6 символов" required></div><p class="muted" style="font-size:12px">Демо-режим: профиль хранится только в этом браузере. Это не серверная авторизация.</p><div class="modal-actions"><button class="subtle" type="button" id="switchAuth">${mode==='register'?'Уже есть аккаунт? Войти':'Создать аккаунт'}</button><button class="primary" type="button" id="authGo">${mode==='register'?'Зарегистрироваться':'Войти'}</button></div>`);$('#switchAuth').onclick=()=>auth(mode==='register'?'login':'register');$('#authGo').onclick=()=>{let email=$('#authEmail').value.trim(),pass=$('#authPass').value;if(!email||!$('#authEmail').checkValidity()||pass.length<6){toast('Проверь email и пароль (минимум 6 символов)');return}let users=JSON.parse(localStorage.getItem('worker_users')||'{}');if(mode==='register'){if(users[email]){toast('Аккаунт с таким email уже есть');return}let name=$('#authName').value.trim();if(!name){toast('Введи имя');return}users[email]={name,pass,handle:'@'+email.split('@')[0].replace(/[^a-z0-9_]/gi,'').slice(0,20),bio:'Пользователь WORKER'};localStorage.setItem('worker_users',JSON.stringify(users))}else if(!users[email]||users[email].pass!==pass){toast('Неверный email или пароль. Возможно, сначала нужно зарегистрироваться.');return}state.user={...users[email],email};save();$('#modal').close();updateUser();nav('profile');toast('Добро пожаловать в WORKER!')}}function updateUser(){$('#sideName').textContent=state.user?.name||'Гость WORKER';$('#sideHandle').textContent=state.user?.handle||'Войдите в аккаунт'}function postCard(p){let liked=p.likes.includes(state.user?.email||'guest'),saved=state.saved.includes(p.id);return `<article class="post"><div class="post-head">${avatar(p.author)}<div class="post-author"><b>${esc(p.author)}</b><small>${esc(p.handle)} · ${new Date(p.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</small></div><button class="post-menu" data-delete="${p.id}" title="Удалить публикацию">···</button></div>${p.text?`<div class="post-text">${esc(p.text)}</div>`:''}${p.image?`<img class="post-image" src="${p.image}" alt="Изображение публикации">`:''}<div class="post-actions"><button class="action ${liked?'liked':''}" data-like="${p.id}">${liked?'♥':'♡'} ${p.likes.length}</button><button class="action" data-comment="${p.id}">▢ ${p.comments.length} <span>Ответить</span></button><button class="action" data-save="${p.id}">${saved?'▣ Сохранено':'▢ Сохранить'}</button><button class="action" data-share="${p.id}">↗ Поделиться</button></div>${p.comments.length?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:8px">${p.comments.slice(-2).map(c=>`<p style="font-size:13px;margin:8px 0"><b>${esc(c.author)}:</b> ${esc(c.text)}</p>`).join('')}</div>`:''}</article>`}function empty(icon,title,desc,button=''){return `<div class="empty-card"><div class="empty-icon">${icon}</div><h3>${title}</h3><p>${desc}</p>${button}</div>`}function render(){let page=state.page||'home',posts=state.posts;let html='';if(page==='home'){html=`<h1 class="page-heading">Твоя лента</h1><p class="subheading">Идеи, люди и проекты, которые вдохновляют.</p><div class="stories"><div class="story"><div class="story-ring"><div>＋</div></div>Ваша история</div><div class="story"><div class="story-ring"><div>🚀</div></div>Проекты</div><div class="story"><div class="story-ring"><div>🎨</div></div>Дизайн</div><div class="story"><div class="story-ring"><div>💡</div></div>Идеи</div><div class="story"><div class="story-ring"><div>🌿</div></div>Баланс</div></div><div class="composer"><div class="composer-top">${avatar()}<button class="fake-input" id="composerOpen">Чем хочешь поделиться?</button></div><div class="composer-actions"><button class="pill" id="composerPhoto">▧ Фото</button><button class="pill" id="composerIdea">✧ Идея</button></div></div>${posts.length?posts.map(postCard).join(''):empty('✦','Начни свою историю','Здесь появятся публикации сообщества. Создай первую — пусть знакомство с WORKER начнётся с тебя.','<button class="primary" id="firstPost">＋ Создать публикацию</button>')}`}else if(page==='explore'){html=`<h1 class="page-heading">Интересное</h1><p class="subheading">Находи новые идеи и обсуждения.</p>${posts.length?posts.map(postCard).join(''):empty('⌕','Пока тихо','Опубликуй что-нибудь, и здесь появится контент.')}`}else if(page==='saved'){let list=posts.filter(p=>state.saved.includes(p.id));html=`<h1 class="page-heading">Сохранённое</h1><p class="subheading">Публикации, к которым хочешь вернуться.</p>${list.length?list.map(postCard).join(''):empty('▣','Здесь будет важное','Нажимай «Сохранить» под публикациями, чтобы собрать их в одном месте.')}`}else if(page==='messages'){html=`<h1 class="page-heading">Сообщения</h1><p class="subheading">Личные разговоры и новые знакомства.</p>${empty('✉','Сообщения скоро появятся','Для настоящей переписки между пользователями нужен сервер. В этой версии чат ещё не подключён.')}`}else if(page==='profile'){let u=state.user;html=u?`<h1 class="page-heading">Мой профиль</h1><div class="profile-hero"><div class="profile-top"><div class="avatar profile-big">${initials(u.name)}</div><div><h2>${esc(u.name)}</h2><p>${esc(u.handle)}</p></div></div><p>${esc(u.bio||'Расскажи немного о себе')}</p><div class="stats"><div><b>${posts.filter(p=>p.handle===u.handle).length}</b><small>Публикаций</small></div><div><b>${state.following.length}</b><small>Подписок</small></div></div><button class="subtle" id="editProfile">Редактировать профиль</button><button class="subtle" id="logoutBtn">Выйти</button></div><h2>Мои публикации</h2>${posts.filter(p=>p.handle===u.handle).map(postCard).join('')||'<p class="muted">Пока нет публикаций.</p>'}`:`<h1 class="page-heading">Твой профиль</h1><p class="subheading">Войди или создай аккаунт, чтобы оформить свой профиль.</p>${empty('◉','Добро пожаловать в WORKER','Создай локальный демо-аккаунт, чтобы попробовать профиль и публикации.','<button class="primary" id="registerBtn">Создать аккаунт</button> <button class="subtle" id="loginBtn">Войти</button>')}`}else if(page==='settings'){html=`<h1 class="page-heading">Настройки</h1><p class="subheading">Настрой WORKER под себя.</p><div class="settings-card"><h3>Аккаунт</h3><div class="setting-row"><div><b>${state.user?esc(state.user.name):'Гость WORKER'}</b><p>${state.user?'Профиль на этом устройстве':'Войди, чтобы попробовать профиль'}</p></div><button class="subtle" id="settingsAccount">${state.user?'Мой профиль':'Войти / регистрация'}</button></div></div><div class="settings-card"><h3>Уведомления</h3><div class="setting-row"><div><b>Push-уведомления</b><p>Разреши браузеру показывать уведомления от WORKER. Для реальных уведомлений в фоне нужен сервер push.</p></div><button class="primary" id="enableNotifications">Включить</button></div><div class="setting-row"><div><b>Проверить уведомления</b><p>Покажет тестовое уведомление, если разрешение уже выдано.</p></div><button class="subtle" id="testNotifications">Проверить</button></div></div><div class="settings-card"><h3>Установка приложения</h3><div class="setting-row"><div><b>Добавить на главный экран</b><p>Установи WORKER как приложение на iPhone или Android.</p></div><button class="primary" id="settingsInstall">Добавить</button></div><div class="setting-row"><div><b>Инструкция по установке</b><p>Пошагово для твоего устройства.</p></div><button class="subtle" id="settingsHow">Открыть</button></div></div><div class="settings-card"><h3>Приложение</h3><div class="setting-row"><div><b>Тёмное оформление</b><p>Глубокие синие оттенки и изумрудные акценты.</p></div><span style="color:var(--accent)">Включено ✓</span></div><div class="setting-row"><div><b>Локальные данные</b><p>Публикации и демо-профиль хранятся в этом браузере.</p></div><button class="subtle" id="clearData">Очистить</button></div></div>`}$('#page').innerHTML=html;bindPage()}function bindPage(){let id=(s,fn)=>{let e=$(s);if(e)e.onclick=fn};id('#composerOpen',composer);id('#firstPost',composer);id('#composerPhoto',composer);id('#composerIdea',composer);id('#registerBtn',()=>auth('register'));id('#loginBtn',()=>auth('login'));id('#settingsAccount',()=>state.user?nav('profile'):auth('login'));id('#settingsInstall',installApp);id('#installBtn',installApp);id('#howInstall',installHelp);id('#settingsHow',installHelp);id('#enableNotifications',enableNotifications);id('#testNotifications',testNotification);id('#notifBtn',()=>state.page==='settings'?testNotification():nav('settings'));id('#editProfile',editProfile);id('#logoutBtn',()=>{state.user=null;save();updateUser();nav('profile');toast('Вы вышли из профиля')});id('#clearData',()=>openModal('<h2>Очистить локальные данные?</h2><p class="muted">Все публикации, сохранённое и демо-профиль на этом устройстве будут удалены.</p><div class="modal-actions"><button class="subtle" value="cancel">Отмена</button><button class="primary" id="confirmClear" type="button">Очистить</button></div>'));id('#confirmClear',()=>{localStorage.removeItem(KEY);localStorage.removeItem('worker_users');state={user:null,posts:[],saved:[],following:[],comments:{},page:'home'};save();$('#modal').close();updateUser();nav('home');toast('Локальные данные очищены')});$$('[data-like]').forEach(b=>b.onclick=()=>{let p=postsFind(b.dataset.like);if(!p)return;let who=state.user?.email||'guest';p.likes=p.likes||[];p.likes=p.likes.includes(who)?p.likes.filter(x=>x!==who):[...p.likes,who];save();render()});$$('[data-save]').forEach(b=>b.onclick=()=>{let x=b.dataset.save;state.saved=state.saved.includes(x)?state.saved.filter(i=>i!==x):[...state.saved,x];save();render();toast(state.saved.includes(x)?'Сохранено':'Удалено из сохранённого')});$$('[data-comment]').forEach(b=>b.onclick=()=>{let p=postsFind(b.dataset.comment);openModal(`<h2>Ответить на публикацию</h2><div class="field"><label>Комментарий</label><textarea id="commentText" placeholder="Напиши ответ..."></textarea></div><div class="modal-actions"><button class="subtle" value="cancel">Отмена</button><button class="primary" id="sendComment" type="button">Отправить</button></div>`);$('#sendComment').onclick=()=>{let t=$('#commentText').value.trim();if(!t)return toast('Напиши комментарий');p.comments.push({author:state.user?.name||'Гость',text:t});save();$('#modal').close();render();toast('Комментарий добавлен')}});$$('[data-delete]').forEach(b=>b.onclick=()=>{let p=postsFind(b.dataset.delete);if(!p)return;if((state.user&&p.handle===state.user.handle)||!state.user){state.posts=state.posts.filter(x=>x.id!==p.id);save();render();toast('Публикация удалена')}else toast('Можно удалять только свои публикации')});$$('[data-share]').forEach(b=>b.onclick=async()=>{let p=postsFind(b.dataset.share),text=`${p.text}\n— ${p.author} · WORKER`;if(navigator.share){try{await navigator.share({title:'WORKER',text})}catch{}}else{try{await navigator.clipboard.writeText(text);toast('Текст скопирован')}catch{toast('Поделиться можно через меню браузера')}}});let search=$('#searchInput');if(search){search.oninput=()=>{let q=search.value.toLowerCase().trim();if(!q){render();return}let filtered=state.posts.filter(p=>(p.text+' '+p.author+' '+p.handle).toLowerCase().includes(q));$('#page').innerHTML=`<h1 class="page-heading">Результаты поиска</h1><p class="subheading">${filtered.length} публикаций найдено</p>${filtered.map(postCard).join('')||empty('⌕','Ничего не найдено','Попробуй изменить поисковый запрос.')}`;bindPage()}}}function postsFind(id){return state.posts.find(p=>p.id===id)}function editProfile(){openModal(`<h2>Редактировать профиль</h2><div class="field"><label>Имя</label><input id="editName" value="${esc(state.user.name)}" maxlength="40"></div><div class="field"><label>О себе</label><textarea id="editBio" maxlength="180">${esc(state.user.bio||'')}</textarea></div><div class="modal-actions"><button class="subtle" value="cancel">Отмена</button><button class="primary" id="saveProfile" type="button">Сохранить</button></div>`);$('#saveProfile').onclick=()=>{let name=$('#editName').value.trim();if(!name)return toast('Имя не может быть пустым');state.user.name=name;state.user.bio=$('#editBio').value.trim();let users=JSON.parse(localStorage.getItem('worker_users')||'{}');if(state.user.email&&users[state.user.email]){users[state.user.email].name=name;users[state.user.email].bio=state.user.bio;localStorage.setItem('worker_users',JSON.stringify(users))}save();updateUser();$('#modal').close();render();toast('Профиль обновлён')}}function installHelp(){openModal(`<h2>Добавить WORKER на главный экран</h2><div class="settings-card"><h3>🍎 iPhone / iPad</h3><ol><li>Открой сайт в <b>Safari</b>.</li><li>Нажми кнопку «Поделиться» (квадрат со стрелкой).</li><li>Выбери «На экран Домой».</li><li>Нажми «Добавить».</li></ol></div><div class="settings-card"><h3>🤖 Android</h3><ol><li>Открой сайт в <b>Chrome</b>.</li><li>Нажми меню <b>⋮</b> в углу.</li><li>Выбери «Установить приложение» или «Добавить на главный экран».</li><li>Подтверди установку.</li></ol></div><p class="muted">Сайт должен быть опубликован по HTTPS. Встроенная установка доступна не во всех браузерах.</p><div class="modal-actions"><button class="primary" value="ok">Понятно</button></div>`)}async function installApp(){if(deferredPrompt){deferredPrompt.prompt();let r=await deferredPrompt.userChoice;deferredPrompt=null;toast(r.outcome==='accepted'?'Установка запущена':'Установку можно выполнить позже')}else installHelp()}async function enableNotifications(){if(!('Notification'in window)){toast('Этот браузер не поддерживает уведомления');return}if(!('serviceWorker'in navigator)){toast('Для уведомлений нужен сайт на HTTPS');return}try{let permission=await Notification.requestPermission();if(permission==='granted'){toast('Уведомления разрешены на этом устройстве');testNotification()}else toast('Разрешение не выдано. Его можно изменить в настройках браузера.')}catch{toast('Не удалось включить уведомления')}}async function testNotification(){if(!('Notification'in window)){toast('Браузер не поддерживает уведомления');return}if(Notification.permission!=='granted'){toast('Сначала нажми «Включить» и разреши уведомления');return}try{let reg=await navigator.serviceWorker?.ready;if(reg&&reg.showNotification)await reg.showNotification('WORKER',{body:'Уведомления на этом устройстве включены.',icon:'icon.svg',badge:'icon.svg'});else new Notification('WORKER',{body:'Уведомления включены.'})}catch{toast('Не удалось показать уведомление')}}$$('[data-page]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.page)));$('#openComposer').onclick=composer;$('#mobileCompose').onclick=composer;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').textContent='Установить приложение'});if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});updateUser();render();
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WORKER">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+
+  <title>WORKER — общайся и создавай</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <a class="brand" href="#home">
+      <span class="logo">W</span>
+      <span>
+        WORKER
+        <small>Твоя среда общения</small>
+      </span>
+    </a>
+
+    <nav>
+      <button class="nav active" data-page="home">⌂ <span>Главная</span></button>
+      <button class="nav" data-page="explore">⌕ <span>Интересное</span></button>
+      <button class="nav" data-page="messages">✉ <span>Сообщения</span></button>
+      <button class="nav" data-page="saved">▣ <span>Сохранённое</span></button>
+      <button class="nav" data-page="profile">◉ <span>Мой профиль</span></button>
+    </nav>
+
+    <button class="primary wide" id="openComposer">
+      ＋ Создать публикацию
+    </button>
+
+    <div class="side-bottom">
+      <button class="nav" data-page="settings">
+        ⚙ <span>Настройки</span>
+      </button>
+
+      <div class="mini-user">
+        <div class="avatar">W</div>
+        <div>
+          <b id="sideName">Гость WORKER</b>
+          <small id="sideHandle">Войдите в аккаунт</small>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button class="mobile-brand" data-page="home">
+        <span class="logo">W</span> WORKER
+      </button>
+
+      <div class="search">
+        <span>⌕</span>
+        <input id="searchInput" placeholder="Поиск публикаций и людей">
+      </div>
+
+      <button class="icon-btn" id="notifBtn" title="Уведомления">♧</button>
+      <button class="icon-btn" data-page="settings" title="Настройки">⚙</button>
+    </header>
+
+    <section id="page" class="content"></section>
+
+    <nav class="mobile-nav">
+      <button class="active" data-page="home">⌂<small>Главная</small></button>
+      <button data-page="explore">⌕<small>Поиск</small></button>
+      <button id="mobileCompose">＋<small>Создать</small></button>
+      <button data-page="messages">✉<small>Чаты</small></button>
+      <button data-page="profile">◉<small>Профиль</small></button>
+    </nav>
+  </main>
+
+  <aside class="rightbar">
+    <div class="widget">
+      <h3>Тренды сегодня</h3>
+
+      <div class="trend">
+        <small>В сообществе</small>
+        <b>#РаботаБудущего</b>
+        <small>1 248 публикаций</small>
+      </div>
+
+      <div class="trend">
+        <small>Популярное</small>
+        <b>#МойПроект</b>
+        <small>856 публикаций</small>
+      </div>
+
+      <div class="trend">
+        <small>Обсуждают</small>
+        <b>#Вдохновение</b>
+        <small>492 публикации</small>
+      </div>
+    </div>
+
+    <div class="widget install-widget">
+      <h3>WORKER на главном экране</h3>
+      <p>Установи приложение для быстрого доступа.</p>
+
+      <button class="primary wide" id="installBtn">
+        Установить приложение
+      </button>
+
+      <button class="subtle wide" id="howInstall">
+        Как добавить на экран
+      </button>
+    </div>
+
+    <p class="footnote">WORKER · Твоя цифровая среда</p>
+  </aside>
+
+</div>
+
+<dialog id="modal">
+  <form method="dialog" id="modalForm">
+    <button class="close" aria-label="Закрыть">×</button>
+    <div id="modalContent"></div>
+  </form>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
