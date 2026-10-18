@@ -1,137 +1,245 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#101827">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <title>WORKER — твоя среда общения</title>
+
+  <meta name="description" content="WORKER — общайся, делись идеями и находи единомышленников.">
+  <meta name="theme-color" content="#17212b">
+
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./style.css">
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="WORKER">
-
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg">
-  <link rel="apple-touch-icon" href="icon.svg">
-
-  <title>WORKER — общайся и создавай</title>
-
-  <link rel="stylesheet" href="style.css">
+  <meta name="mobile-web-app-capable" content="yes">
 </head>
+
 <body>
+  <div class="app">
 
-<div class="app">
+    <!-- БОКОВОЕ МЕНЮ -->
+    <aside class="sidebar">
+      <a href="#home" class="brand" aria-label="WORKER — главная">
+        <span class="logo">W</span>
+        <span class="brand-text">
+          <strong>WORKER</strong>
+          <small>Твоя среда общения</small>
+        </span>
+      </a>
 
-  <aside class="sidebar">
-    <a class="brand" href="#home">
-      <span class="logo">W</span>
-      <span>
-        WORKER
-        <small>Твоя среда общения</small>
-      </span>
-    </a>
+      <nav class="sidebar-nav" aria-label="Основная навигация">
+        <button class="nav active" type="button" data-page="home">
+          <span class="nav-icon">⌂</span>
+          <span>Главная</span>
+        </button>
 
-    <nav>
-      <button class="nav active" data-page="home">⌂ <span>Главная</span></button>
-      <button class="nav" data-page="explore">⌕ <span>Интересное</span></button>
-      <button class="nav" data-page="messages">✉ <span>Сообщения</span></button>
-      <button class="nav" data-page="saved">▣ <span>Сохранённое</span></button>
-      <button class="nav" data-page="profile">◉ <span>Мой профиль</span></button>
-    </nav>
+        <button class="nav" type="button" data-page="explore">
+          <span class="nav-icon">⌕</span>
+          <span>Интересное</span>
+        </button>
 
-    <button class="primary wide" id="openComposer">
-      ＋ Создать публикацию
-    </button>
+        <button class="nav" type="button" data-page="messages">
+          <span class="nav-icon">✉</span>
+          <span>Сообщения</span>
+        </button>
 
-    <div class="side-bottom">
-      <button class="nav" data-page="settings">
-        ⚙ <span>Настройки</span>
+        <button class="nav" type="button" data-page="saved">
+          <span class="nav-icon">▣</span>
+          <span>Сохранённое</span>
+        </button>
+
+        <button class="nav" type="button" data-page="profile">
+          <span class="nav-icon">◉</span>
+          <span>Мой профиль</span>
+        </button>
+      </nav>
+
+      <button class="primary wide" type="button" id="openComposer">
+        <span>＋</span> Создать публикацию
       </button>
 
-      <div class="mini-user">
-        <div class="avatar">W</div>
-        <div>
-          <b id="sideName">Гость WORKER</b>
-          <small id="sideHandle">Войдите в аккаунт</small>
+      <div class="sidebar-bottom">
+        <button class="nav" type="button" data-page="settings">
+          <span class="nav-icon">⚙</span>
+          <span>Настройки</span>
+        </button>
+
+        <div class="mini-user">
+          <div class="avatar">W</div>
+          <div class="mini-user-info">
+            <strong id="sideName">Гость WORKER</strong>
+            <small id="sideHandle">Войдите в аккаунт</small>
+          </div>
         </div>
       </div>
-    </div>
-  </aside>
+    </aside>
 
-  <main>
-    <header class="topbar">
-      <button class="mobile-brand" data-page="home">
-        <span class="logo">W</span> WORKER
-      </button>
+    <!-- ОСНОВНАЯ ОБЛАСТЬ -->
+    <main class="main">
 
-      <div class="search">
-        <span>⌕</span>
-        <input id="searchInput" placeholder="Поиск публикаций и людей">
-      </div>
+      <header class="topbar">
+        <a class="mobile-brand" href="#home">
+          <span class="logo">W</span>
+          <strong>WORKER</strong>
+        </a>
 
-      <button class="icon-btn" id="notifBtn" title="Уведомления">♧</button>
-      <button class="icon-btn" data-page="settings" title="Настройки">⚙</button>
-    </header>
+        <label class="search">
+          <span aria-hidden="true">⌕</span>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Поиск публикаций и людей"
+            autocomplete="off"
+            aria-label="Поиск"
+          >
+        </label>
 
-    <section id="page" class="content"></section>
+        <div class="topbar-actions">
+          <button
+            class="icon-btn"
+            type="button"
+            id="notifBtn"
+            aria-label="Включить уведомления"
+            title="Уведомления"
+          >♧</button>
 
-    <nav class="mobile-nav">
-      <button class="active" data-page="home">⌂<small>Главная</small></button>
-      <button data-page="explore">⌕<small>Поиск</small></button>
-      <button id="mobileCompose">＋<small>Создать</small></button>
-      <button data-page="messages">✉<small>Чаты</small></button>
-      <button data-page="profile">◉<small>Профиль</small></button>
-    </nav>
-  </main>
+          <button
+            class="icon-btn"
+            type="button"
+            data-page="settings"
+            aria-label="Настройки"
+            title="Настройки"
+          >⚙</button>
+        </div>
+      </header>
 
-  <aside class="rightbar">
-    <div class="widget">
-      <h3>Тренды сегодня</h3>
+      <!-- JavaScript отрисовывает здесь выбранную страницу -->
+      <section id="page" class="content" aria-live="polite">
+        <div class="loading-card">
+          <div class="logo">W</div>
+          <h1>Добро пожаловать в WORKER</h1>
+          <p>Подготавливаем твою ленту...</p>
+          <noscript>
+            Для работы приложения необходимо включить JavaScript в браузере.
+          </noscript>
+        </div>
+      </section>
 
-      <div class="trend">
-        <small>В сообществе</small>
-        <b>#РаботаБудущего</b>
-        <small>1 248 публикаций</small>
-      </div>
+      <!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
+      <nav class="mobile-nav" aria-label="Мобильная навигация">
+        <button class="active" type="button" data-page="home">
+          <span>⌂</span>
+          <small>Главная</small>
+        </button>
 
-      <div class="trend">
-        <small>Популярное</small>
-        <b>#МойПроект</b>
-        <small>856 публикаций</small>
-      </div>
+        <button type="button" data-page="explore">
+          <span>⌕</span>
+          <small>Поиск</small>
+        </button>
 
-      <div class="trend">
-        <small>Обсуждают</small>
-        <b>#Вдохновение</b>
-        <small>492 публикации</small>
-      </div>
-    </div>
+        <button type="button" id="mobileCompose">
+          <span>＋</span>
+          <small>Создать</small>
+        </button>
 
-    <div class="widget install-widget">
-      <h3>WORKER на главном экране</h3>
-      <p>Установи приложение для быстрого доступа.</p>
+        <button type="button" data-page="messages">
+          <span>✉</span>
+          <small>Чаты</small>
+        </button>
 
-      <button class="primary wide" id="installBtn">
-        Установить приложение
-      </button>
+        <button type="button" data-page="profile">
+          <span>◉</span>
+          <small>Профиль</small>
+        </button>
+      </nav>
 
-      <button class="subtle wide" id="howInstall">
-        Как добавить на экран
-      </button>
-    </div>
+    </main>
 
-    <p class="footnote">WORKER · Твоя цифровая среда</p>
-  </aside>
+    <!-- ПРАВАЯ КОЛОНКА -->
+    <aside class="rightbar">
 
-</div>
+      <section class="widget">
+        <h2>Тренды сегодня</h2>
 
-<dialog id="modal">
-  <form method="dialog" id="modalForm">
-    <button class="close" aria-label="Закрыть">×</button>
-    <div id="modalContent"></div>
-  </form>
-</dialog>
+        <div class="trend">
+          <small>В сообществе</small>
+          <strong>#РаботаБудущего</strong>
+          <small>Популярная тема</small>
+        </div>
 
-<div id="toast" role="status"></div>
+        <div class="trend">
+          <small>Популярное</small>
+          <strong>#МойПроект</strong>
+          <small>Идеи и разработки</small>
+        </div>
 
-<script src="app.js"></script>
+        <div class="trend">
+          <small>Обсуждают</small>
+          <strong>#Вдохновение</strong>
+          <small>Творчество и жизнь</small>
+        </div>
+      </section>
+
+      <section class="widget install-widget">
+        <h2>WORKER всегда рядом</h2>
+
+        <p>
+          Добавь приложение на главный экран телефона,
+          чтобы быстрее открывать его.
+        </p>
+
+        <button class="primary wide" type="button" id="installBtn">
+          Установить приложение
+        </button>
+
+        <button class="subtle wide" type="button" id="howInstall">
+          Как установить?
+        </button>
+      </section>
+
+      <footer class="footnote">
+        <span>WORKER</span>
+        <span>Твоя цифровая среда</span>
+      </footer>
+
+    </aside>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО -->
+  <dialog id="modal" aria-label="Диалоговое окно">
+    <form method="dialog" id="modalForm">
+      <button
+        class="close"
+        type="submit"
+        aria-label="Закрыть"
+        title="Закрыть"
+      >×</button>
+
+      <div id="modalContent"></div>
+    </form>
+  </dialog>
+
+  <!-- СООБЩЕНИЯ ПРИ ВЫПОЛНЕНИИ ДЕЙСТВИЙ -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ОСНОВНОЙ JAVASCRIPT -->
+  <script src="./app.js"></script>
+
+  <!-- РЕГИСТРАЦИЯ SERVICE WORKER -->
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js")
+          .catch(function (error) {
+            console.error("Не удалось зарегистрировать Service Worker:", error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>
